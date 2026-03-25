@@ -1,0 +1,16 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+
+# dotnet
+*.suo
+*.userprefs
+.DS_Store
+
+# Environment / secrets
+*.env
+appsettings.Development.json
