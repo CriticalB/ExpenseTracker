@@ -42,6 +42,21 @@ public class AuthService : IAuthService
         };
     }
 
+    public async Task<AuthResponseDto> LoginAsync(LoginRequestDto loginRequest)
+    {
+        var user = _context.Users.SingleOrDefault(u => u.Email == loginRequest.Email);
+
+        if (user == null || !BCrypt.Net.BCrypt.Verify(loginRequest.Password, user.PasswordHash))
+            throw new UnauthorizedAccessException("Invalid email or password.");
+
+        return await Task.FromResult(new AuthResponseDto
+        {
+            Token = GenerateToken(user),
+            Username = user.Username,
+            Email = user.Email
+        });
+    }
+
     private string GenerateToken(User user)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
