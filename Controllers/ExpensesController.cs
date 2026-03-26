@@ -56,6 +56,14 @@ public class ExpensesController : ControllerBase
         return Ok(expense);
     }
 
+    [HttpGet("summary")]
+    public async Task<IActionResult> GetSummary([FromQuery] DateTime? from, [FromQuery] DateTime? to)
+    {
+        var userId = GetUserId();
+        var summary = await _expenseService.GetSummaryAsync(userId, from, to);
+        return Ok(summary);
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {

@@ -9,4 +9,5 @@ public interface IExpenseService
     Task<ExpenseResponseDto> CreateAsync(CreateExpenseDto createExpense, int userId);
     Task<ExpenseResponseDto?> UpdateAsync(int id, UpdateExpenseDto updatedExpense, int userId);
     Task<bool> DeleteAsync(int id, int userId);
+    Task<ExpenseSummaryResponseDto> GetSummaryAsync(int userId, DateTime? from, DateTime? to);
 }

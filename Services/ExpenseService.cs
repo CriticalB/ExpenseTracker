@@ -79,6 +79,35 @@ public class ExpenseService : IExpenseService
         return true;
     }
 
+    public async Task<ExpenseSummaryResponseDto> GetSummaryAsync(int userId, DateTime? from, DateTime? to)
+    {
+        var query = _context.Expenses.Where(e => e.UserId == userId);
+
+        if (from.HasValue)
+            query = query.Where(e => e.Date >= from.Value);
+
+        if (to.HasValue)
+            query = query.Where(e => e.Date <= to.Value);
+
+        var categories = await query
+            .GroupBy(e => e.Category)
+            .Select(g => new ExpenseSummaryDto
+            {
+                Category = g.Key,
+                TotalAmount = g.Sum(e => e.Amount),
+                Count = g.Count()
+            })
+            .ToListAsync();
+
+        return new ExpenseSummaryResponseDto
+        {
+            From = from,
+            To = to,
+            TotalAmount = categories.Sum(c => c.TotalAmount),
+            Categories = categories
+        };
+    }
+
     private static ExpenseResponseDto ToDto(Expense expense) => new()
     {
         Id = expense.Id,
