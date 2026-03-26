@@ -41,27 +41,33 @@ public class ExpensesController : ControllerBase
     public async Task<IActionResult> Create(CreateExpenseDto createExpense)
     {
         var userId = GetUserId();
-        var expense = await _expenseService.CreateAsync(createExpense, userId);
-        return CreatedAtAction(nameof(GetById), new { id = expense.Id }, expense);
+        try
+        {
+            var expense = await _expenseService.CreateAsync(createExpense, userId);
+            return CreatedAtAction(nameof(GetById), new { id = expense.Id }, expense);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, UpdateExpenseDto updatedExpense)
     {
         var userId = GetUserId();
-        var expense = await _expenseService.UpdateAsync(id, updatedExpense, userId);
+        try
+        {
+            var expense = await _expenseService.UpdateAsync(id, updatedExpense, userId);
 
-        if (expense == null) return NotFound();
+            if (expense == null) return NotFound();
 
-        return Ok(expense);
-    }
-
-    [HttpGet("summary")]
-    public async Task<IActionResult> GetSummary([FromQuery] DateTime? from, [FromQuery] DateTime? to)
-    {
-        var userId = GetUserId();
-        var summary = await _expenseService.GetSummaryAsync(userId, from, to);
-        return Ok(summary);
+            return Ok(expense);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpDelete("{id}")]
@@ -73,6 +79,14 @@ public class ExpensesController : ControllerBase
         if (!deleted) return NotFound();
 
         return NoContent();
+    }
+
+    [HttpGet("summary")]
+    public async Task<IActionResult> GetSummary([FromQuery] DateTime? from, [FromQuery] DateTime? to)
+    {
+        var userId = GetUserId();
+        var summary = await _expenseService.GetSummaryAsync(userId, from, to);
+        return Ok(summary);
     }
 
     private int GetUserId() =>
