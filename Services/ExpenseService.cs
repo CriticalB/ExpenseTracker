@@ -114,10 +114,13 @@ public class ExpenseService : IExpenseService
             })
             .ToListAsync();
 
+        var responseFrom = from ?? await _context.Expenses.Where(e => e.UserId == userId).MinAsync(e => (DateTime?)e.Date);
+        var responseTo = to ?? await _context.Expenses.Where(e => e.UserId == userId).MaxAsync(e => (DateTime?)e.Date);
+
         return new ExpenseSummaryResponseDto
         {
-            From = from,
-            To = to,
+            From = responseFrom,
+            To = responseTo,
             TotalNet = categories.Sum(c => c.TotalNet),
             TotalVat = categories.Sum(c => c.TotalVat),
             TotalGross = categories.Sum(c => c.TotalGross),
