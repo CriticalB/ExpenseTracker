@@ -1,6 +1,8 @@
 # ExpenseTracker
 
-A REST API for tracking personal expenses, built with ASP.NET Core.
+A REST API for tracking personal expenses, built with ASP.NET Core. Supports JWT authentication, VAT calculations, and spending summaries by category.
+
+Live demo: expensetracker-production-743d.up.railway.app/swagger
 
 ## Tech Stack
 
@@ -8,7 +10,6 @@ A REST API for tracking personal expenses, built with ASP.NET Core.
 - Entity Framework Core with Npgsql (PostgreSQL)
 - JWT Bearer authentication
 - BCrypt.Net-Next for password hashing
-- Neon hosted PostgreSQL
 
 ## Setup
 
@@ -38,11 +39,10 @@ Add the following to `appsettings.json`:
 ### Run
 
 ```bash
-dotnet ef database update
 dotnet run
 ```
 
-Swagger UI is available at `https://localhost:{port}/swagger` in development.
+Migrations are applied automatically on startup. Swagger UI is available at `/swagger`.
 
 ---
 
@@ -58,6 +58,7 @@ Swagger UI is available at `https://localhost:{port}/swagger` in development.
   "username": "john",
   "email": "john@example.com",
   "password": "secret"
+
 }
 ```
 
@@ -85,7 +86,9 @@ Both return a JWT token on success:
 
 ### Expenses
 
-All expense endpoints require a `Authorization: Bearer <token>` header. Users can only access their own expenses.
+All expense endpoints require an `Authorization: Bearer <token>` header. Users can only access their own expenses.
+
+Amounts are split into net, VAT, and gross. You provide the net amount and VAT rate — the API calculates the rest.
 
 #### List all expenses
 `GET /api/expenses`
@@ -99,9 +102,10 @@ All expense endpoints require a `Authorization: Bearer <token>` header. Users ca
 ```json
 {
   "title": "Groceries",
-  "amount": 45.50,
+  "netAmount": 45.50,
+  "vatRate": 20,
   "category": "Food",
-  "date": "2026-03-26T00:00:00Z",
+  "date": "2026-03-27T00:00:00Z",
   "notes": "Weekly shop"
 }
 ```
@@ -112,9 +116,10 @@ All expense endpoints require a `Authorization: Bearer <token>` header. Users ca
 ```json
 {
   "title": "Groceries",
-  "amount": 50.00,
+  "netAmount": 50.00,
+  "vatRate": 20,
   "category": "Food",
-  "date": "2026-03-26T00:00:00Z",
+  "date": "2026-03-27T00:00:00Z",
   "notes": "Weekly shop + extras"
 }
 ```
@@ -122,12 +127,20 @@ All expense endpoints require a `Authorization: Bearer <token>` header. Users ca
 #### Delete an expense
 `DELETE /api/expenses/{id}`
 
-#### Summary by category
+Returns `204 No Content` on success.
+
+---
+
+### Summary
+
+#### Spending summary by category
 `GET /api/expenses/summary`
 
 Optional query parameters:
 - `from` — start date (e.g. `2026-01-01`)
 - `to` — end date (e.g. `2026-03-31`)
+
+Defaults to the date range of your earliest and latest expense.
 
 Example response:
 
@@ -135,10 +148,24 @@ Example response:
 {
   "from": "2026-01-01T00:00:00Z",
   "to": "2026-03-31T00:00:00Z",
-  "totalAmount": 210.00,
+  "totalNet": 175.00,
+  "totalVat": 35.00,
+  "totalGross": 210.00,
   "categories": [
-    { "category": "Food", "totalAmount": 150.00, "count": 5 },
-    { "category": "Transport", "totalAmount": 60.00, "count": 3 }
+    {
+      "category": "Food",
+      "totalNet": 125.00,
+      "totalVat": 25.00,
+      "totalGross": 150.00,
+      "count": 5
+    },
+    {
+      "category": "Transport",
+      "totalNet": 50.00,
+      "totalVat": 10.00,
+      "totalGross": 60.00,
+      "count": 3
+    }
   ]
 }
 ```
